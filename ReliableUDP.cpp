@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "Net.h"
+#include "Net.h" //Provides the networking library used for socket programming
 
 //#define SHOW_ACKS
 
@@ -18,12 +18,15 @@ using namespace net;
 
 const int ServerPort = 30000;
 const int ClientPort = 30001;
-const int ProtocolId = 0x11223344;
-const float DeltaTime = 1.0f / 30.0f;
+const int ProtocolId = 0x11223344; //Used to identify valid packets for this application (helps distinguish packets meant for this protocol).
+const float DeltaTime = 1.0f / 30.0f; //DeltaTime and SendRate define the frame time and data send interval (both 30 frames/sec).
 const float SendRate = 1.0f / 30.0f;
-const float TimeOut = 10.0f;
-const int PacketSize = 256;
+const float TimeOut = 10.0f; //TimeOut specifies the connection timeout duration in seconds.
+const int PacketSize = 256; //Defines the size of the data packet in bytes.
 
+
+
+//Dynamically adjusts the data transfer rate based on network conditions (e.g., round-trip time).
 class FlowControl
 {
 public:
@@ -41,6 +44,12 @@ public:
 		good_conditions_time = 0.0f;
 		penalty_reduction_accumulator = 0.0f;
 	}
+
+	/*
+	* Monitors RTT (Round-Trip Time) to determine the mode:
+	*Increases penalty time if RTT exceeds a threshold.
+	*Reduces penalty time if RTT stabilizes for a duration.
+	*/
 
 	void Update(float deltaTime, float rtt)
 	{
@@ -94,7 +103,7 @@ public:
 			}
 		}
 	}
-
+	//In Good mode, the sending rate is higher (30 packets/sec). In Bad mode, the rate is lower(10 packets / sec).
 	float GetSendRate()
 	{
 		return mode == Good ? 30.0f : 10.0f;
@@ -132,6 +141,7 @@ int main(int argc, char* argv[])
 	if (argc >= 2)
 	{
 		int a, b, c, d;
+		#pragma warning(suppress : 4996)
 		if (sscanf(argv[1], "%d.%d.%d.%d", &a, &b, &c, &d))
 		{
 			mode = Client;
