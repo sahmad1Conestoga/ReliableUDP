@@ -200,6 +200,12 @@ int main(int argc, char* argv[])
 		{
 			printf("client connected to server\n");
 			connected = true;
+
+			// Send a test packet immediately after connecting
+			const char* testMessage = "Hello World << 0 >> ";
+			connection.SendPacket((unsigned char*)testMessage, strlen(testMessage));
+			
+
 		}
 
 		if (!connected && connection.ConnectFailed())

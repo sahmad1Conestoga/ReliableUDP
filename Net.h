@@ -964,7 +964,7 @@ namespace net
 
 		// overriden functions from "Connection"
 
-		bool SendPacket(const unsigned char data[], int PacketSizeHack)
+		virtual bool SendPacket(const unsigned char data[], int PacketSizeHack) override
 		{
 #ifdef NET_UNIT_TEST
 			if (reliabilitySystem.GetLocalSequence() & packet_loss_mask)
@@ -974,20 +974,24 @@ namespace net
 			}
 #endif
 			const int header = 12;
+			static int packetCounter = 0;
+			char message[256];
+			snprintf(message, sizeof(message), "Hello World <<%d>>", packetCounter++);
+			size_t messageSize = strlen(message);
 			//unsigned char packet[header + PacketSizeHack];
-			std::vector<unsigned char> packet(header + PacketSizeHack);
+			std::vector<unsigned char> packet(header + messageSize);
 			unsigned int seq = reliabilitySystem.GetLocalSequence();
 			unsigned int ack = reliabilitySystem.GetRemoteSequence();
 			unsigned int ack_bits = reliabilitySystem.GenerateAckBits();
 			WriteHeader(&packet[0], seq, ack, ack_bits);
-			std::memcpy(&packet[0] + header, data, PacketSizeHack);
-			if (!Connection::SendPacket(&packet[0], PacketSizeHack + header))
+			std::memcpy(&packet[header], message, messageSize);
+			if (!Connection::SendPacket(&packet[0], header+ messageSize))
 				return false;
-			reliabilitySystem.PacketSent(PacketSizeHack);
+			reliabilitySystem.PacketSent(messageSize);
 			return true;
 		}
 
-		int ReceivePacket(unsigned char data[], int PacketSizeHack)
+		virtual int ReceivePacket(unsigned char data[], int PacketSizeHack) override
 		{
 			const int header = 12;
 			if (PacketSizeHack <= header)
@@ -1002,10 +1006,15 @@ namespace net
 			unsigned int packet_sequence = 0;
 			unsigned int packet_ack = 0;
 			unsigned int packet_ack_bits = 0;
-			ReadHeader(&packet[0], packet_sequence, packet_ack, packet_ack_bits);
+			ReadHeader(&packet[0], packet_sequence, packet_ack, packet_ack_bits); // Extract header information
+			// Notify reliability system about the received packet
 			reliabilitySystem.PacketReceived(packet_sequence, received_bytes - header);
 			reliabilitySystem.ProcessAck(packet_ack, packet_ack_bits);
+			// Extract the message from the packet
 			std::memcpy(data, &packet[0] + header, received_bytes - header);
+			data[received_bytes - header] = '\0';  // Null-terminate the string...added for testing Hello World
+			// Print the received message
+			printf("Received Packet: %s\n", data);
 			return received_bytes - header;
 		}
 
